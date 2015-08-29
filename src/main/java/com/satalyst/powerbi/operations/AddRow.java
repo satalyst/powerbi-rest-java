@@ -1,13 +1,9 @@
 package com.satalyst.powerbi.operations;
 
 import com.google.gson.Gson;
-import com.satalyst.powerbi.PowerBiOperation;
-import com.satalyst.powerbi.PowerBiOperationExecutionException;
+import com.satalyst.powerbi.*;
 import com.satalyst.powerbi.model.Column;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.util.*;
 
@@ -50,12 +46,11 @@ public class AddRow implements PowerBiOperation<Void> {
     }
 
     @Override
-    public void execute(Invocation.Builder request) throws PowerBiOperationExecutionException {
-        Entity<String> entity = Entity.json(createRequestJson());
-        Response response = request.post(entity);
+    public void execute(PowerBiRequest request) throws PowerBiOperationExecutionException, RateLimitExceededException, RequestAuthenticationException {
+        PowerBiResponse response = request.post(createRequestJson());
 
-        if(response.getStatus() != 200) {
-            throw new PowerBiOperationExecutionException("Expected 200 response.", response.getStatus(), response.readEntity(String.class));
+        if (response.getStatus() != 200) {
+            throw new PowerBiOperationExecutionException("Expected 200 response.", response.getStatus(), response.getBody());
         }
     }
 

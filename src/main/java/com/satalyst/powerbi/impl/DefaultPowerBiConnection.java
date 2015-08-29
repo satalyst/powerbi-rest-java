@@ -1,8 +1,10 @@
 package com.satalyst.powerbi.impl;
 
-import com.satalyst.powerbi.Authenticator;
-import com.satalyst.powerbi.PowerBiOperation;
-import com.satalyst.powerbi.PowerBiConnection;
+import com.github.rholder.retry.Retryer;
+import com.github.rholder.retry.RetryerBuilder;
+import com.github.rholder.retry.StopStrategies;
+import com.github.rholder.retry.WaitStrategies;
+import com.satalyst.powerbi.*;
 import org.jboss.resteasy.specimpl.ResteasyUriBuilder;
 
 import javax.ws.rs.client.Client;
@@ -14,16 +16,23 @@ import javax.ws.rs.core.UriBuilder;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Aidan Morgan
  */
 public class DefaultPowerBiConnection implements PowerBiConnection {
+    public static final long DEFAULT_MAXIMUM_WAIT_TIME = TimeUnit.MINUTES.toMillis(5);
+    public static final int DEFAULT_RETRIES = 10;
+
     private Authenticator authenticator;
     private ExecutorService executor;
     private ClientBuilder clientBuilder;
 
     private String baseUrl;
+
+    private long maximumWaitTime = DEFAULT_MAXIMUM_WAIT_TIME;
+    private int maximumRetries = DEFAULT_RETRIES;
 
     /**
      * Constructor.
@@ -37,10 +46,33 @@ public class DefaultPowerBiConnection implements PowerBiConnection {
         this.clientBuilder = ClientBuilder.newBuilder();
     }
 
+    public DefaultPowerBiConnection setMaximumWaitTime(long val, TimeUnit timeUnit) {
+        this.maximumWaitTime = timeUnit.toMillis(val);
+        return this;
+    }
+
+    public DefaultPowerBiConnection setMaximumRetries(int val) {
+        this.maximumRetries = val;
+        return this;
+    }
+
     @Override
     public <T> Future<T> execute(PowerBiOperation<T> val) {
-        Callable<T> call = new PowerBiCallable<>(val, clientBuilder);
-        return executor.submit(call);
+        // use a retryer to keep attempting to send data to powerBI if we receive a rate limit exception.
+        // use exponential backoff to create a window of time for the request to come through.
+        Retryer<T> retryer = RetryerBuilder.<T>newBuilder()
+                .retryIfExceptionOfType(RateLimitExceededException.class)
+                .retryIfExceptionOfType(RequestAuthenticationException.class)
+                .withWaitStrategy(WaitStrategies.exponentialWait(maximumWaitTime, TimeUnit.MILLISECONDS))
+                .withStopStrategy(StopStrategies.stopAfterAttempt(maximumRetries))
+                .build();
+
+        return executor.submit(new Callable<T>() {
+            @Override
+            public T call() throws Exception {
+                return retryer.call(new PowerBiCallable<>(val, clientBuilder));
+            }
+        });
     }
 
     public void setBaseUrl(String baseUrl) {
@@ -71,8 +103,9 @@ public class DefaultPowerBiConnection implements PowerBiConnection {
                 request.header("Authorization", "Bearer " + authenticator.authenticate());
                 request.accept(MediaType.APPLICATION_JSON_TYPE);
 
+                PowerBiRequest r = new PowerBiRequestImpl(request);
                 // delegate to the command to perform the processing now.
-                command.execute(request);
+                command.execute(r);
             } finally {
                 if (client != null) {
                     client.close();

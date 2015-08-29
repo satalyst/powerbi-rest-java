@@ -1,9 +1,7 @@
 package com.satalyst.powerbi.operations;
 
 import com.google.gson.Gson;
-import com.satalyst.powerbi.PowerBiOperation;
-import com.satalyst.powerbi.PowerBiOperationExecutionException;
-import com.satalyst.powerbi.TableSchemaLoader;
+import com.satalyst.powerbi.*;
 import com.satalyst.powerbi.impl.model.DefaultDataset;
 import com.satalyst.powerbi.model.Column;
 import com.satalyst.powerbi.model.Dataset;
@@ -13,7 +11,6 @@ import com.satalyst.powerbi.model.Table;
 import static com.satalyst.powerbi.operations.MapUtils.*;
 
 import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.util.ArrayList;
@@ -62,18 +59,17 @@ public class CreateDataset implements PowerBiOperation<Dataset> {
     @Override
     public void buildUri(UriBuilder uri) {
         uri.path("myorg").path("datasets").queryParam("defaultRetentionPolicy", retentionPolicy.getName());
-
     }
 
     @Override
-    public void execute(Invocation.Builder request) throws PowerBiOperationExecutionException {
-        Response response = request.post(Entity.json(createRequestJson(tables)));
+    public void execute(PowerBiRequest request) throws PowerBiOperationExecutionException, RateLimitExceededException, RequestAuthenticationException {
+        PowerBiResponse response = request.post(createRequestJson(tables));
 
         if (response.getStatus() != 201) {
-            throw new PowerBiOperationExecutionException("Expected status code of 200.", response.getStatus(), response.readEntity(String.class));
+            throw new PowerBiOperationExecutionException("Expected status code of 200.", response.getStatus(), response.getBody());
         }
 
-        result = parseResponseJson(response.readEntity(String.class));
+        result = parseResponseJson(response.getBody());
     }
 
     private String createRequestJson(List<Table> tables) {

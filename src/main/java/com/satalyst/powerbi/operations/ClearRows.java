@@ -1,9 +1,7 @@
 package com.satalyst.powerbi.operations;
 
-import com.satalyst.powerbi.PowerBiOperation;
-import com.satalyst.powerbi.PowerBiOperationExecutionException;
+import com.satalyst.powerbi.*;
 
-import javax.ws.rs.client.Invocation;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.util.UUID;
@@ -33,11 +31,11 @@ public class ClearRows implements PowerBiOperation<Void> {
     }
 
     @Override
-    public void execute(Invocation.Builder request) throws PowerBiOperationExecutionException {
-        Response response = request.delete();
+    public void execute(PowerBiRequest request) throws PowerBiOperationExecutionException, RateLimitExceededException, RequestAuthenticationException {
+       PowerBiResponse response = request.delete();
 
         if(response.getStatus() != 200) {
-            throw new PowerBiOperationExecutionException("Expected 200 response.", response.getStatus(), response.readEntity(String.class));
+            throw new PowerBiOperationExecutionException("Expected 200 response.", response.getStatus(), response.getBody());
         }
     }
 }

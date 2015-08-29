@@ -19,6 +19,6 @@ public class NumberColumnTypeParser implements ColumnTypeParser {
 
     @Override
     public Object parse(Object o) {
-        return ((Number) o).intValue();
+        return ((Number) o).longValue();
     }
 }

@@ -13,4 +13,6 @@ public interface Authenticator {
      * @throws AuthenticationFailureException if a problem authenticating with the server occurs.
      */
     public String authenticate() throws AuthenticationFailureException;
+
+    public void reset();
 }

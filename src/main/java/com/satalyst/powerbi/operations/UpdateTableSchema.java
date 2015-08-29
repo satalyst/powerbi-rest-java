@@ -1,12 +1,10 @@
 package com.satalyst.powerbi.operations;
 
 import com.google.gson.Gson;
-import com.satalyst.powerbi.PowerBiOperation;
-import com.satalyst.powerbi.PowerBiOperationExecutionException;
+import com.satalyst.powerbi.*;
 import com.satalyst.powerbi.model.Table;
 
 import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.util.Arrays;
@@ -46,12 +44,11 @@ public class UpdateTableSchema implements PowerBiOperation<Void> {
     private static List<Integer> SUCCESS_RESPONSES = Arrays.asList(200, 201);
 
     @Override
-    public void execute(Invocation.Builder request) throws PowerBiOperationExecutionException {
-        Entity out = Entity.json(parser.toJson(CreateDataset.createTableJson(schema)));
-        Response response = request.put(out);
+    public void execute(PowerBiRequest request) throws PowerBiOperationExecutionException, RateLimitExceededException, RequestAuthenticationException {
+        PowerBiResponse response = request.put(parser.toJson(CreateDataset.createTableJson(schema)));
 
         if(!SUCCESS_RESPONSES.contains(response.getStatus())) {
-            throw new PowerBiOperationExecutionException("Expected response of 201.", response.getStatus(), response.readEntity(String.class));
+            throw new PowerBiOperationExecutionException("Expected response of 201.", response.getStatus(), response.getBody());
         }
     }
 }

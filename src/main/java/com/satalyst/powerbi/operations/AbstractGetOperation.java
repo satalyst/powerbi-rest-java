@@ -1,10 +1,8 @@
 package com.satalyst.powerbi.operations;
 
 import com.google.gson.Gson;
-import com.satalyst.powerbi.PowerBiOperation;
-import com.satalyst.powerbi.PowerBiOperationExecutionException;
+import com.satalyst.powerbi.*;
 
-import javax.ws.rs.client.Invocation;
 import javax.ws.rs.core.Response;
 
 /**
@@ -25,14 +23,14 @@ public abstract class AbstractGetOperation<T> implements PowerBiOperation<T> {
     }
 
     @Override
-    public final void execute(Invocation.Builder request) throws PowerBiOperationExecutionException {
-        Response response = request.get();
+    public final void execute(PowerBiRequest request) throws PowerBiOperationExecutionException, RateLimitExceededException, RequestAuthenticationException {
+        PowerBiResponse response = request.get();
 
         if(response.getStatus() != 200) {
-            throw new PowerBiOperationExecutionException("Expected status code of 200.", response.getStatus(), response.readEntity(String.class));
+            throw new PowerBiOperationExecutionException("Expected a 200 status code.", response.getStatus(), response.getBody());
         }
 
-        result = parseJson(parser, response.readEntity(String.class));
+        result = parseJson(parser, response.getBody());
     }
 
 

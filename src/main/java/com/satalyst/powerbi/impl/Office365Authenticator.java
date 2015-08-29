@@ -101,13 +101,30 @@ public class Office365Authenticator implements Authenticator {
                 }
             }
         } finally {
-            tokenLock.readLock().unlock();
+            // TODO: in theory, if there has been an exception in the authenticate method then this unlock method
+            // TODO: should fail as the downgrade of the lock was never performed. Haven't seen this issue in practice yet
+            // TODO: however it looks theoretically possible.
+            try {
+                tokenLock.readLock().unlock();
+            } catch (IllegalMonitorStateException e) {
+                // ignore - see TODO above for reasoning....
+            }
         }
 
 
         return cachedToken;
     }
 
+    @Override
+    public void reset() {
+        try {
+            tokenLock.writeLock().lock();
+            cachedToken = null;
+        }
+        finally {
+            tokenLock.writeLock().unlock();
+        }
+    }
 
     private String _authenticate() throws AuthenticationFailureException {
         try {

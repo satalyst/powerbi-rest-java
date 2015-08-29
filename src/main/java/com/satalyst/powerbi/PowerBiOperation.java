@@ -29,5 +29,5 @@ public interface PowerBiOperation<T> {
      * @param request the request to perform.
      * @throws PowerBiOperationExecutionException if a problem processing the request occurs.
      */
-    void execute(Invocation.Builder request) throws PowerBiOperationExecutionException;
+    void execute(PowerBiRequest request) throws PowerBiOperationExecutionException, RateLimitExceededException, RequestAuthenticationException;
 }
