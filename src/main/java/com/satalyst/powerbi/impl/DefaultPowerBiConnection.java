@@ -57,10 +57,10 @@ public class DefaultPowerBiConnection implements PowerBiConnection {
     }
 
     @Override
-    public <T> Future<T> execute(PowerBiOperation<T> val) {
+    public <T> Future<T> execute(final PowerBiOperation<T> val) {
         // use a retryer to keep attempting to send data to powerBI if we receive a rate limit exception.
         // use exponential backoff to create a window of time for the request to come through.
-        Retryer<T> retryer = RetryerBuilder.<T>newBuilder()
+        final Retryer<T> retryer = RetryerBuilder.<T>newBuilder()
                 .retryIfExceptionOfType(RateLimitExceededException.class)
                 .retryIfExceptionOfType(RequestAuthenticationException.class)
                 .withWaitStrategy(WaitStrategies.exponentialWait(maximumWaitTime, TimeUnit.MILLISECONDS))
