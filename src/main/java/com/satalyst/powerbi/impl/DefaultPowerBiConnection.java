@@ -1,9 +1,7 @@
 package com.satalyst.powerbi.impl;
 
-import com.github.rholder.retry.Retryer;
-import com.github.rholder.retry.RetryerBuilder;
-import com.github.rholder.retry.StopStrategies;
-import com.github.rholder.retry.WaitStrategies;
+import com.github.rholder.retry.*;
+import com.google.common.base.Predicate;
 import com.satalyst.powerbi.*;
 import org.jboss.resteasy.specimpl.ResteasyUriBuilder;
 
@@ -22,8 +20,6 @@ import java.util.concurrent.TimeUnit;
  * @author Aidan Morgan
  */
 public class DefaultPowerBiConnection implements PowerBiConnection {
-    public static final long DEFAULT_MAXIMUM_WAIT_TIME = TimeUnit.MINUTES.toMillis(5);
-    public static final int DEFAULT_RETRIES = 10;
 
     private Authenticator authenticator;
     private ExecutorService executor;
@@ -31,14 +27,14 @@ public class DefaultPowerBiConnection implements PowerBiConnection {
 
     private String baseUrl;
 
-    private long maximumWaitTime = DEFAULT_MAXIMUM_WAIT_TIME;
-    private int maximumRetries = DEFAULT_RETRIES;
+    private long maximumWaitTime;
+    private int maximumRetries;
 
     /**
      * Constructor.
      *
      * @param authenticator the {@see Authenticator} instance to use for authentication.
-     * @param executor the {@see ExecutorService} to use for background processing.
+     * @param executor      the {@see ExecutorService} to use for background processing.
      */
     public DefaultPowerBiConnection(Authenticator authenticator, ExecutorService executor) {
         this.authenticator = authenticator;
@@ -46,11 +42,13 @@ public class DefaultPowerBiConnection implements PowerBiConnection {
         this.clientBuilder = ClientBuilder.newBuilder();
     }
 
+    @Override
     public DefaultPowerBiConnection setMaximumWaitTime(long val, TimeUnit timeUnit) {
         this.maximumWaitTime = timeUnit.toMillis(val);
         return this;
     }
 
+    @Override
     public DefaultPowerBiConnection setMaximumRetries(int val) {
         this.maximumRetries = val;
         return this;
@@ -61,9 +59,12 @@ public class DefaultPowerBiConnection implements PowerBiConnection {
         // use a retryer to keep attempting to send data to powerBI if we receive a rate limit exception.
         // use exponential backoff to create a window of time for the request to come through.
         final Retryer<T> retryer = RetryerBuilder.<T>newBuilder()
+                // we are retrying on these exceptions because they are able to be handled by just retrying this callable
+                // again (assuming that the maximum retries value is greater than 1 and this isn't the last retry attempt
+                // before giving up.
                 .retryIfExceptionOfType(RateLimitExceededException.class)
                 .retryIfExceptionOfType(RequestAuthenticationException.class)
-                .withWaitStrategy(WaitStrategies.exponentialWait(maximumWaitTime, TimeUnit.MILLISECONDS))
+                .withAttemptTimeLimiter(AttemptTimeLimiters.<T>fixedTimeLimit(maximumWaitTime, TimeUnit.MILLISECONDS))
                 .withStopStrategy(StopStrategies.stopAfterAttempt(maximumRetries))
                 .build();
 
@@ -75,8 +76,10 @@ public class DefaultPowerBiConnection implements PowerBiConnection {
         });
     }
 
-    public void setBaseUrl(String baseUrl) {
+    @Override
+    public DefaultPowerBiConnection setBaseUrl(String baseUrl) {
         this.baseUrl = baseUrl;
+        return this;
     }
 
 
@@ -106,6 +109,13 @@ public class DefaultPowerBiConnection implements PowerBiConnection {
                 PowerBiRequest r = new PowerBiRequestImpl(request);
                 // delegate to the command to perform the processing now.
                 command.execute(r);
+            } catch (RequestAuthenticationException e) {
+                // we are intentionally resetting the authenticator here as the previous token has expired, so the next time
+                // through this call the authenticator will not used the cached token and will retrieve a new one.
+                if (e.isTokenExpired()) {
+                    authenticator.reset();
+                }
+                throw e;
             } finally {
                 if (client != null) {
                     client.close();

@@ -59,13 +59,11 @@ public class PowerBiRequestImpl implements PowerBiRequest {
             throw new RateLimitExceededException(response.readEntity(String.class));
         }
 
-        if(response.getStatus() == 403) {
+        if (response.getStatus() == 403) {
             String body = response.readEntity(String.class);
 
             // TODO : replace with proper JSON parsing to extract the token.
-            if(StringUtils.contains(body, "TokenExpired")) {
-                throw new RequestAuthenticationException(response.readEntity(String.class));
-            }
+            throw new RequestAuthenticationException(response.readEntity(String.class), StringUtils.contains(body, "TokenExpired"));
         }
     }
 

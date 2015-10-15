@@ -18,8 +18,15 @@ public class DefaultPowerBiConnectionFactory implements PowerBiConnectionFactory
 
     private String powerBiBaseUrl = DEFAULT_POWER_BI_BASE_URL;
 
+    public static final long DEFAULT_MAXIMUM_WAIT_TIME = TimeUnit.SECONDS.toMillis(30);
+    public static final int DEFAULT_RETRIES = 10;
+
+
     private Authenticator authenticator;
     private ExecutorService executor;
+
+    private long maximumWaitTime = DEFAULT_MAXIMUM_WAIT_TIME;
+    private int maximumRetries = DEFAULT_RETRIES;
 
     public DefaultPowerBiConnectionFactory(Authenticator authenticator) {
        this(authenticator, Executors.newSingleThreadExecutor());
@@ -31,21 +38,36 @@ public class DefaultPowerBiConnectionFactory implements PowerBiConnectionFactory
     }
 
 
+    @Override
     public DefaultPowerBiConnectionFactory setPowerBiBaseUrl(String powerBiBaseUrl) {
         this.powerBiBaseUrl = checkNotNull(powerBiBaseUrl);
         return this;
     }
 
+    @Override
     public DefaultPowerBiConnectionFactory setExecutor(ExecutorService executor) {
         this.executor = executor;
         return this;
     }
 
+    @Override
+    public DefaultPowerBiConnectionFactory setMaximumWaitTime(long val, TimeUnit units) {
+        this.maximumWaitTime = units.toMillis(val);
+        return this;
+    }
+
+    @Override
+    public DefaultPowerBiConnectionFactory setMaximumRetries(int maximumRetries) {
+        this.maximumRetries = maximumRetries;
+        return this;
+    }
 
     @Override
     public PowerBiConnection create() {
-        DefaultPowerBiConnection connection = new DefaultPowerBiConnection(authenticator, executor);
-        connection.setBaseUrl(powerBiBaseUrl);
+        DefaultPowerBiConnection connection = new DefaultPowerBiConnection(authenticator, executor)
+                .setBaseUrl(powerBiBaseUrl)
+                .setMaximumRetries(maximumRetries)
+                .setMaximumWaitTime(maximumWaitTime, TimeUnit.MILLISECONDS);
 
         return connection;
     }

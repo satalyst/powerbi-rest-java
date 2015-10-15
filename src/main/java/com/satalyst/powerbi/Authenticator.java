@@ -14,5 +14,9 @@ public interface Authenticator {
      */
     public String authenticate() throws AuthenticationFailureException;
 
+    /**
+     * Resets the cached token that was been returned by this {@code Authenticator}, forcing a new token to be fetched
+     * the next time {@see authenticate()} is called.
+     */
     public void reset();
 }

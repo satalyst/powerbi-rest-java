@@ -79,7 +79,7 @@ public class ColumnType {
 
     public Object parse(Object value) {
         if (value == null) {
-            return "null";
+            return null;
         }
 
         // TODO : For performance, introduce a parser cache here for commonly used ColumnType & Class values to save
