@@ -38,25 +38,21 @@ public class DefaultPowerBiConnectionFactory implements PowerBiConnectionFactory
     }
 
 
-    @Override
     public DefaultPowerBiConnectionFactory setPowerBiBaseUrl(String powerBiBaseUrl) {
         this.powerBiBaseUrl = checkNotNull(powerBiBaseUrl);
         return this;
     }
 
-    @Override
     public DefaultPowerBiConnectionFactory setExecutor(ExecutorService executor) {
         this.executor = executor;
         return this;
     }
 
-    @Override
     public DefaultPowerBiConnectionFactory setMaximumWaitTime(long val, TimeUnit units) {
         this.maximumWaitTime = units.toMillis(val);
         return this;
     }
 
-    @Override
     public DefaultPowerBiConnectionFactory setMaximumRetries(int maximumRetries) {
         this.maximumRetries = maximumRetries;
         return this;

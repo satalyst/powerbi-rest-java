@@ -1,7 +1,9 @@
 package com.satalyst.powerbi.impl;
 
-import com.github.rholder.retry.*;
-import com.google.common.base.Predicate;
+import com.github.rholder.retry.AttemptTimeLimiters;
+import com.github.rholder.retry.Retryer;
+import com.github.rholder.retry.RetryerBuilder;
+import com.github.rholder.retry.StopStrategies;
 import com.satalyst.powerbi.*;
 import org.jboss.resteasy.specimpl.ResteasyUriBuilder;
 
@@ -42,13 +44,11 @@ public class DefaultPowerBiConnection implements PowerBiConnection {
         this.clientBuilder = ClientBuilder.newBuilder();
     }
 
-    @Override
     public DefaultPowerBiConnection setMaximumWaitTime(long val, TimeUnit timeUnit) {
         this.maximumWaitTime = timeUnit.toMillis(val);
         return this;
     }
 
-    @Override
     public DefaultPowerBiConnection setMaximumRetries(int val) {
         this.maximumRetries = val;
         return this;
@@ -58,6 +58,8 @@ public class DefaultPowerBiConnection implements PowerBiConnection {
     public <T> Future<T> execute(final PowerBiOperation<T> val) {
         // use a retryer to keep attempting to send data to powerBI if we receive a rate limit exception.
         // use exponential backoff to create a window of time for the request to come through.
+
+        // TODO : the time to wait is actually in the response header, come back and add that value.
         final Retryer<T> retryer = RetryerBuilder.<T>newBuilder()
                 // we are retrying on these exceptions because they are able to be handled by just retrying this callable
                 // again (assuming that the maximum retries value is greater than 1 and this isn't the last retry attempt
@@ -76,7 +78,6 @@ public class DefaultPowerBiConnection implements PowerBiConnection {
         });
     }
 
-    @Override
     public DefaultPowerBiConnection setBaseUrl(String baseUrl) {
         this.baseUrl = baseUrl;
         return this;

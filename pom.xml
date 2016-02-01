@@ -68,8 +68,6 @@
             <artifactId>junit</artifactId>
             <version>4.12</version>
         </dependency>
-
-
     </dependencies>
 
     <repositories>
@@ -80,7 +78,6 @@
     </repositories>
 
     <build>
-
         <plugins>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -97,9 +94,9 @@
                     <includeProjectDependencies>true</includeProjectDependencies>
                     <includePluginDependencies>false</includePluginDependencies>
                     <classpathScope>compile</classpathScope>
-                    <mainClass>com.satalyst.openttd.storm.OpenTtdStormTopology</mainClass>
                 </configuration>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
