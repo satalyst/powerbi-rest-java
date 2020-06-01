@@ -3,14 +3,12 @@ package com.satalyst.powerbi.model;
 import com.satalyst.powerbi.model.parsers.JavaDateColumnTypeParser;
 import com.satalyst.powerbi.model.parsers.JodaDateColumnTypeParser;
 import com.satalyst.powerbi.model.parsers.NumberColumnTypeParser;
-import org.apache.commons.collections4.map.LRUMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -42,8 +40,9 @@ public class ColumnType {
     }
 
     public static final ColumnType INT64 = create("Int64");
-    public static final ColumnType STRING = create("string");
-    public static final ColumnType BOOL = create("bool");
+    public static final ColumnType DECIMAL = create("Double");
+    public static final ColumnType STRING = create("String");
+    public static final ColumnType BOOL = create("Boolean");
     public static final ColumnType DATETIME = create("DateTime");
 
 
